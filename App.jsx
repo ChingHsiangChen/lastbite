@@ -365,138 +365,203 @@ function CartPanel({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [open, onClose]);
 
+  // Add overlay click handler
+  useEffect(() => {
+    const handleOverlayClick = (e) => {
+      if (open && e.target.classList.contains('cart-overlay')) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('click', handleOverlayClick);
+    return () => document.removeEventListener('click', handleOverlayClick);
+  }, [open, onClose]);
+
   return (
-    <aside
-      id="cart-panel"
-      className={`cart-panel ${open ? "open" : ""}`}
-      aria-hidden={!open}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="cart-title"
-      style={{
-        position: "fixed",
-        top: 0,
-        right: open ? 0 : "-100%",
-        width: "min(420px, 100vw)",
-        height: "100vh",
-        height: "100dvh",
-        background: "#fff",
-        boxShadow: "-4px 0 18px rgba(0,0,0,.25)",
-        zIndex: 1200,
-        display: "flex",
-        flexDirection: "column",
-        transition: "right 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-        overflow: "hidden",
-      }}
-    >
-      <div
-        className="cart-header d-flex justify-content-between align-items-center px-3 py-2"
-        style={{ background: "#2c2c2c", color: "#fff" }}
-      >
-        <h3 id="cart-title" className="m-0">Your Cart</h3>
-        <button
-          id="close-cart"
-          onClick={onClose}
+    <>
+      {/* Overlay */}
+      {open && (
+        <div 
+          className="cart-overlay"
           style={{
-            border: "none",
-            background: "transparent",
-            color: "#fff",
-            fontSize: 20,
-            cursor: "pointer",
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 1199,
+            transition: 'opacity 0.3s ease',
           }}
-          aria-label="Close cart"
-        >
-          ✕
-        </button>
-      </div>
+        />
+      )}
 
-      <div
-        id="cart-items"
-        className="cart-items px-3 py-2"
-        style={{ overflowY: "auto", flex: 1 }}
+      {/* Cart Panel */}
+      <aside
+        id="cart-panel"
+        className={`cart-panel ${open ? "open" : ""}`}
+        aria-hidden={!open}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cart-title"
+        style={{
+          position: "fixed",
+          top: 0,
+          right: open ? 0 : "-100%",
+          width: "min(420px, 100vw)",
+          height: "100vh",
+          height: "100dvh",
+          background: "#fff",
+          boxShadow: "-4px 0 18px rgba(0,0,0,.25)",
+          zIndex: 1200,
+          display: "flex",
+          flexDirection: "column",
+          transition: "right 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          overflow: "hidden",
+        }}
       >
-        {cart.length === 0 ? (
-          <p className="empty text-muted">Your cart is empty.</p>
-        ) : (
-          cart.map((item) => (
-            <div
-              key={String(item.menuItem)}
-              className="cart-item d-grid align-items-center"
-              style={{
-                gridTemplateColumns: "1fr auto auto auto",
-                gap: "10px",
-                padding: "10px 0",
-                borderBottom: "1px solid #eee",
-              }}
-            >
-              <div className="ci-name fw-semibold">{item.name}</div>
+        <div
+          className="cart-header d-flex justify-content-between align-items-center px-3 py-2"
+          style={{ background: "#2c2c2c", color: "#fff" }}
+        >
+          <h3 id="cart-title" className="m-0">Your Cart</h3>
+          <button
+            id="close-cart"
+            onClick={onClose}
+            style={{
+              border: "none",
+              background: "transparent",
+              color: "#fff",
+              fontSize: 20,
+              cursor: "pointer",
+              padding: "0 8px",
+            }}
+            aria-label="Close cart"
+          >
+            ✕
+          </button>
+        </div>
 
-              <div className="ci-controls d-inline-flex align-items-center gap-2">
-                <button
-                  className="qty-btn"
-                  onClick={() => onChangeQty(item.menuItem, -1)}
-                  aria-label={`Decrease quantity of ${item.name}`}
-                >
-                  −
-                </button>
-                <span className="qty">{item.qty}</span>
-                <button
-                  className="qty-btn"
-                  onClick={() => onChangeQty(item.menuItem, +1)}
-                  aria-label={`Increase quantity of ${item.name}`}
-                >
-                  +
-                </button>
-              </div>
-
-              <div className="ci-price fw-bold">
-                ${(item.price * item.qty).toFixed(2)}
-              </div>
-
-              <button
-                className="remove-btn"
-                onClick={() => onRemove(item.menuItem)}
+        <div
+          id="cart-items"
+          className="cart-items px-3 py-2"
+          style={{ 
+            overflowY: "auto", 
+            flex: 1,
+            maxHeight: "calc(100vh - 180px)"
+          }}
+        >
+          {cart.length === 0 ? (
+            <p className="empty text-muted text-center py-5">Your cart is empty.</p>
+          ) : (
+            cart.map((item) => (
+              <div
+                key={String(item.menuItem)}
+                className="cart-item d-flex align-items-center justify-content-between"
                 style={{
-                  border: "none",
-                  background: "transparent",
-                  cursor: "pointer",
+                  padding: "12px 0",
+                  borderBottom: "1px solid #eee",
+                  gap: "10px",
                 }}
-                aria-label={`Remove ${item.name} from cart`}
               >
-                🗑
-              </button>
+                <div className="d-flex flex-column" style={{ flex: 1 }}>
+                  <div className="ci-name fw-semibold">{item.name}</div>
+                  <div className="ci-price text-muted">
+                    ${Number(item.price).toFixed(2)} each
+                  </div>
+                </div>
+
+                <div className="d-flex align-items-center gap-2">
+                  <div className="ci-controls d-inline-flex align-items-center gap-1 border rounded-pill px-2">
+                    <button
+                      className="qty-btn btn btn-sm btn-outline-secondary"
+                      onClick={() => onChangeQty(item.menuItem, -1)}
+                      aria-label={`Decrease quantity of ${item.name}`}
+                      style={{
+                        border: 'none',
+                        background: 'transparent',
+                        fontSize: '16px',
+                        padding: '2px 8px',
+                      }}
+                    >
+                      −
+                    </button>
+                    <span className="qty fw-bold px-2" style={{ minWidth: '24px', textAlign: 'center' }}>
+                      {item.qty}
+                    </span>
+                    <button
+                      className="qty-btn btn btn-sm btn-outline-secondary"
+                      onClick={() => onChangeQty(item.menuItem, +1)}
+                      aria-label={`Increase quantity of ${item.name}`}
+                      style={{
+                        border: 'none',
+                        background: 'transparent',
+                        fontSize: '16px',
+                        padding: '2px 8px',
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <div className="ci-total fw-bold ms-2" style={{ minWidth: '60px', textAlign: 'right' }}>
+                    ${(item.price * item.qty).toFixed(2)}
+                  </div>
+
+                  <button
+                    className="remove-btn btn btn-sm btn-outline-danger ms-2"
+                    onClick={() => onRemove(item.menuItem)}
+                    aria-label={`Remove ${item.name} from cart`}
+                    style={{
+                      padding: '4px 8px',
+                      minWidth: '36px',
+                    }}
+                  >
+                    🗑
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="cart-footer px-3 py-3 border-top" style={{ background: '#f8f9fa' }}>
+          <div id="cart-total" className="mb-3">
+            <div className="d-flex justify-content-between mb-1">
+              <span>Subtotal:</span>
+              <span>${subtotal.toFixed(2)}</span>
             </div>
-          ))
-        )}
-      </div>
+            <div className="d-flex justify-content-between mb-1">
+              <span>Tax (8.875%):</span>
+              <span>${tax.toFixed(2)}</span>
+            </div>
+            <div className="d-flex justify-content-between fw-bold fs-5 pt-2 border-top">
+              <span>Total:</span>
+              <span>${total.toFixed(2)}</span>
+            </div>
+          </div>
 
-      <div className="cart-footer px-3 py-3 border-top">
-        <div id="cart-total" className="cart-total-row">
-          <div>Subtotal: ${subtotal.toFixed(2)}</div>
-          <div>Tax (8.875%): ${tax.toFixed(2)}</div>
-          <strong>Total: ${total.toFixed(2)}</strong>
+          <div className="cart-actions d-flex gap-2">
+            <button
+              id="clear-cart"
+              className="btn btn-outline-secondary flex-grow-1"
+              onClick={onClear}
+              disabled={cart.length === 0}
+            >
+              Clear Cart
+            </button>
+
+            <button
+              className="btn btn-warning flex-grow-1"
+              onClick={onCheckout}
+              disabled={cart.length === 0}
+            >
+              Checkout
+            </button>
+          </div>
         </div>
-
-        <div className="cart-actions d-flex gap-2">
-          <button
-            id="clear-cart"
-            className="btn-secondary flex-grow-1"
-            onClick={onClear}
-            disabled={cart.length === 0}
-          >
-            Clear Cart
-          </button>
-
-          <button
-            className="btn btn-warning flex-grow-1"
-            onClick={onCheckout}
-            disabled={cart.length === 0}
-          >
-            Checkout
-          </button>
-        </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }
 
@@ -631,14 +696,27 @@ export default function App() {
     if (!cartId) return;
 
     try {
-      const existingItem = cart.find(item => String(item.menuItem) === String(menuItemId));
+      // Use strict string comparison for IDs
+      const existingItem = cart.find(item => 
+        String(item.menuItem) === String(menuItemId)
+      );
       
+      // If item doesn't exist and we're trying to decrease, do nothing
       if (!existingItem && delta < 0) return;
+      
+      // If quantity would go to 0 or less, remove the item instead
+      if (existingItem && existingItem.qty + delta <= 0) {
+        await removeItem(menuItemId);
+        return;
+      }
 
       const response = await fetch(`${API}/api/carts/${cartId}/items`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ menuItemId, qtyDelta: delta }),
+        body: JSON.stringify({ 
+          menuItemId: String(menuItemId), 
+          qtyDelta: delta 
+        }),
       });
 
       if (!response.ok) {
