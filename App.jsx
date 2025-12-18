@@ -333,6 +333,8 @@ function Footer() {
   );
 }
 
+// ... (Keep all previous code until CartPanel function)
+
 function CartPanel({
   open,
   cart,
@@ -355,7 +357,6 @@ function CartPanel({
     
     if (open) {
       document.addEventListener('keydown', handleEscape);
-      // Focus the close button when cart opens
       setTimeout(() => {
         const closeBtn = document.getElementById('close-cart');
         if (closeBtn) closeBtn.focus();
@@ -457,68 +458,80 @@ function CartPanel({
             cart.map((item) => (
               <div
                 key={String(item.menuItem)}
-                className="cart-item d-flex align-items-center justify-content-between"
+                className="cart-item"
                 style={{
                   padding: "12px 0",
                   borderBottom: "1px solid #eee",
-                  gap: "10px",
                 }}
               >
-                <div className="d-flex flex-column" style={{ flex: 1 }}>
+                <div className="d-flex justify-content-between align-items-start mb-2">
                   <div className="ci-name fw-semibold">{item.name}</div>
-                  <div className="ci-price text-muted">
-                    ${Number(item.price).toFixed(2)} each
-                  </div>
-                </div>
-
-                <div className="d-flex align-items-center gap-2">
-                  <div className="ci-controls d-inline-flex align-items-center gap-1 border rounded-pill px-2">
-                    <button
-                      className="qty-btn btn btn-sm btn-outline-secondary"
-                      onClick={() => onChangeQty(item.menuItem, -1)}
-                      aria-label={`Decrease quantity of ${item.name}`}
-                      style={{
-                        border: 'none',
-                        background: 'transparent',
-                        fontSize: '16px',
-                        padding: '2px 8px',
-                      }}
-                    >
-                      −
-                    </button>
-                    <span className="qty fw-bold px-2" style={{ minWidth: '24px', textAlign: 'center' }}>
-                      {item.qty}
-                    </span>
-                    <button
-                      className="qty-btn btn btn-sm btn-outline-secondary"
-                      onClick={() => onChangeQty(item.menuItem, +1)}
-                      aria-label={`Increase quantity of ${item.name}`}
-                      style={{
-                        border: 'none',
-                        background: 'transparent',
-                        fontSize: '16px',
-                        padding: '2px 8px',
-                      }}
-                    >
-                      +
-                    </button>
-                  </div>
-
-                  <div className="ci-total fw-bold ms-2" style={{ minWidth: '60px', textAlign: 'right' }}>
-                    ${(item.price * item.qty).toFixed(2)}
-                  </div>
-
                   <button
-                    className="remove-btn btn btn-sm btn-outline-danger ms-2"
+                    className="remove-btn btn btn-sm btn-outline-danger"
                     onClick={() => onRemove(item.menuItem)}
                     aria-label={`Remove ${item.name} from cart`}
                     style={{
-                      padding: '4px 8px',
-                      minWidth: '36px',
+                      padding: "2px 6px",
+                      fontSize: "12px",
                     }}
                   >
                     🗑
                   </button>
+                </div>
+                
+                <div className="d-flex justify-content-between align-items-center">
+                  <div className="text-muted">
+                    ${Number(item.price).toFixed(2)} each
+                  </div>
+                  
+                  <div className="d-flex align-items-center">
+                    <div className="ci-controls d-flex align-items-center border rounded-pill">
+                      <button
+                        className="qty-btn btn btn-sm"
+                        onClick={() => onChangeQty(item.menuItem, -1)}
+                        aria-label={`Decrease quantity of ${item.name}`}
+                        style={{
+                          border: 'none',
+                          background: 'transparent',
+                          padding: '4px 10px',
+                          fontSize: '16px',
+                          lineHeight: '1',
+                          color: '#333'
+                        }}
+                      >
+                        −
+                      </button>
+                      <span 
+                        className="qty fw-bold px-2" 
+                        style={{ 
+                          minWidth: '30px', 
+                          textAlign: 'center',
+                          fontSize: '16px'
+                        }}
+                      >
+                        {item.qty}
+                      </span>
+                      <button
+                        className="qty-btn btn btn-sm"
+                        onClick={() => onChangeQty(item.menuItem, +1)}
+                        aria-label={`Increase quantity of ${item.name}`}
+                        style={{
+                          border: 'none',
+                          background: 'transparent',
+                          padding: '4px 10px',
+                          fontSize: '16px',
+                          lineHeight: '1',
+                          color: '#333'
+                        }}
+                      >
+                        +
+                      </button>
+                    </div>
+                    
+                    <div className="ci-total fw-bold ms-3" style={{ minWidth: '70px', textAlign: 'right' }}>
+                      ${(item.price * item.qty).toFixed(2)}
+                    </div>
+                  </div>
                 </div>
               </div>
             ))
@@ -564,6 +577,8 @@ function CartPanel({
     </>
   );
 }
+
+// ... (Keep the rest of the App component code the same as in previous fix)
 
 // ---------------------
 // MAIN APP
@@ -692,45 +707,56 @@ export default function App() {
     }
   }
 
-  async function changeQty(menuItemId, delta) {
-    if (!cartId) return;
+  // In the App component, replace the changeQty function with this improved version:
 
-    try {
-      // Use strict string comparison for IDs
-      const existingItem = cart.find(item => 
-        String(item.menuItem) === String(menuItemId)
-      );
-      
-      // If item doesn't exist and we're trying to decrease, do nothing
-      if (!existingItem && delta < 0) return;
-      
-      // If quantity would go to 0 or less, remove the item instead
-      if (existingItem && existingItem.qty + delta <= 0) {
-        await removeItem(menuItemId);
-        return;
-      }
+async function changeQty(menuItemId, delta) {
+  if (!cartId) return;
 
-      const response = await fetch(`${API}/api/carts/${cartId}/items`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          menuItemId: String(menuItemId), 
-          qtyDelta: delta 
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        console.error("Change quantity failed:", error);
-        return;
-      }
-
-      const updated = await response.json();
-      setCart(updated.items || []);
-    } catch (err) {
-      console.error("Change quantity error:", err);
+  try {
+    // Use strict string comparison for IDs
+    const existingItem = cart.find(item => 
+      String(item.menuItem) === String(menuItemId)
+    );
+    
+    // If item doesn't exist and we're trying to decrease, do nothing
+    if (!existingItem && delta < 0) {
+      console.log("Item not found for decreasing quantity");
+      return;
     }
+    
+    console.log("Changing quantity for:", menuItemId, "delta:", delta, "current qty:", existingItem?.qty);
+    
+    // If quantity would go to 0 or less, remove the item instead
+    if (existingItem && existingItem.qty + delta <= 0) {
+      console.log("Removing item instead (qty would be 0 or less)");
+      await removeItem(menuItemId);
+      return;
+    }
+
+    const response = await fetch(`${API}/api/carts/${cartId}/items`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        menuItemId: String(menuItemId), 
+        qtyDelta: delta 
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      console.error("Change quantity failed:", error);
+      alert("Failed to update quantity. Please try again.");
+      return;
+    }
+
+    const updated = await response.json();
+    console.log("Updated cart:", updated);
+    setCart(updated.items || []);
+  } catch (err) {
+    console.error("Change quantity error:", err);
+    alert("Error updating quantity. Please try again.");
   }
+}
 
   async function removeItem(menuItemId) {
     if (!cartId) return;
