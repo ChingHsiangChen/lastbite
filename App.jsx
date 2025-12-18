@@ -18,9 +18,28 @@ const SLIDER_IMAGES = [
 
 function Header({ cartCount, onCartOpen }) {
   const [navOpen, setNavOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <header className="bg-dark text-light sticky-top shadow-sm d-flex align-items-center justify-content-between px-3 py-2">
+    <header 
+      className={`bg-dark text-light sticky-top shadow-sm d-flex align-items-center justify-content-between px-3 py-2 ${scrolled ? 'scrolled' : ''}`}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 9999,
+        transition: 'all 0.3s ease'
+      }}
+    >
       <div className="d-flex align-items-center gap-2">
         <img
           src="/logo.png"
@@ -65,28 +84,35 @@ function Header({ cartCount, onCartOpen }) {
       </div>
 
       {navOpen && (
-        <nav className="navbar bg-dark position-absolute top-100 start-0 w-100 d-md-none py-2 px-3">
+        <nav 
+          className="navbar bg-dark position-absolute top-100 start-0 w-100 d-md-none py-2 px-3"
+          style={{ zIndex: 10000 }}
+        >
           <a
             href="#home"
             className="d-block text-warning text-decoration-none mb-1"
+            onClick={() => setNavOpen(false)}
           >
             Home
           </a>
           <a
             href="#menu"
             className="d-block text-warning text-decoration-none mb-1"
+            onClick={() => setNavOpen(false)}
           >
             Menu
           </a>
           <a
             href="#about"
             className="d-block text-warning text-decoration-none mb-1"
+            onClick={() => setNavOpen(false)}
           >
             About
           </a>
           <a
             href="#contact"
             className="d-block text-warning text-decoration-none mb-1"
+            onClick={() => setNavOpen(false)}
           >
             Contact
           </a>
@@ -98,7 +124,7 @@ function Header({ cartCount, onCartOpen }) {
 
 function Hero() {
   return (
-    <section id="home" className="hero position-relative text-center">
+    <section id="home" className="hero position-relative text-center" style={{ marginTop: '60px' }}>
       <img
         src="/hero.jpeg"
         alt="Restaurant Interior"
@@ -147,6 +173,11 @@ function MenuTable({ title, items, onAdd }) {
                     color: "#f8b400",
                     fontWeight: 700,
                     marginLeft: 8,
+                    cursor: "pointer"
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAdd(item._id);
                   }}
                 >
                   + Add
@@ -220,7 +251,7 @@ function About() {
         Chinese and Japanese cuisine come together under one roof.
       </p>
       <p>
-        At <strong>LastBite</strong>, dining is more than just a meal — it’s an
+        At <strong>LastBite</strong>, dining is more than just a meal — it's an
         experience rooted in culture and craftsmanship.
       </p>
     </section>
@@ -315,31 +346,54 @@ function CartPanel({
   const tax = subtotal * TAX_RATE;
   const total = subtotal + tax;
 
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && open) {
+        onClose();
+      }
+    };
+    
+    if (open) {
+      document.addEventListener('keydown', handleEscape);
+      // Focus the close button when cart opens
+      setTimeout(() => {
+        const closeBtn = document.getElementById('close-cart');
+        if (closeBtn) closeBtn.focus();
+      }, 100);
+    }
+    
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [open, onClose]);
+
   return (
     <aside
       id="cart-panel"
       className={`cart-panel ${open ? "open" : ""}`}
-      aria-hidden={open ? "false" : "true"}
+      aria-hidden={!open}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cart-title"
       style={{
         position: "fixed",
         top: 0,
-        right: open ? 0 : "-420px",
-        width: "420px",
-        maxWidth: "90vw",
+        right: open ? 0 : "-100%",
+        width: "min(420px, 100vw)",
         height: "100vh",
+        height: "100dvh",
         background: "#fff",
         boxShadow: "-4px 0 18px rgba(0,0,0,.25)",
         zIndex: 1200,
         display: "flex",
         flexDirection: "column",
-        transition: "right .25s ease",
+        transition: "right 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        overflow: "hidden",
       }}
     >
       <div
         className="cart-header d-flex justify-content-between align-items-center px-3 py-2"
         style={{ background: "#2c2c2c", color: "#fff" }}
       >
-        <h3 className="m-0">Your Cart</h3>
+        <h3 id="cart-title" className="m-0">Your Cart</h3>
         <button
           id="close-cart"
           onClick={onClose}
@@ -350,6 +404,7 @@ function CartPanel({
             fontSize: 20,
             cursor: "pointer",
           }}
+          aria-label="Close cart"
         >
           ✕
         </button>
@@ -380,6 +435,7 @@ function CartPanel({
                 <button
                   className="qty-btn"
                   onClick={() => onChangeQty(item.menuItem, -1)}
+                  aria-label={`Decrease quantity of ${item.name}`}
                 >
                   −
                 </button>
@@ -387,6 +443,7 @@ function CartPanel({
                 <button
                   className="qty-btn"
                   onClick={() => onChangeQty(item.menuItem, +1)}
+                  aria-label={`Increase quantity of ${item.name}`}
                 >
                   +
                 </button>
@@ -404,6 +461,7 @@ function CartPanel({
                   background: "transparent",
                   cursor: "pointer",
                 }}
+                aria-label={`Remove ${item.name} from cart`}
               >
                 🗑
               </button>
@@ -424,6 +482,7 @@ function CartPanel({
             id="clear-cart"
             className="btn-secondary flex-grow-1"
             onClick={onClear}
+            disabled={cart.length === 0}
           >
             Clear Cart
           </button>
@@ -455,7 +514,7 @@ export default function App() {
   const [cartId, setCartId] = useState(null);
   const [cart, setCart] = useState([]);
 
-  // ✅ FIX #1: prevent 304 Not Modified JSON problems
+  // Load menu
   useEffect(() => {
     let alive = true;
 
@@ -465,7 +524,7 @@ export default function App() {
         setMenuError("");
 
         const res = await fetch(`${API}/api/menu`, {
-          cache: "no-store", // IMPORTANT: avoids 304 body issues
+          cache: "no-store",
           headers: { Accept: "application/json" },
         });
 
@@ -501,25 +560,35 @@ export default function App() {
         let id = localStorage.getItem("lastbite_cart_id");
 
         if (!id) {
-          const created = await fetch(`${API}/api/carts`, {
+          const response = await fetch(`${API}/api/carts`, {
             method: "POST",
-          }).then((r) => r.json());
-
+          });
+          
+          if (!response.ok) {
+            throw new Error("Failed to create cart");
+          }
+          
+          const created = await response.json();
           id = created._id;
           localStorage.setItem("lastbite_cart_id", id);
         }
 
         setCartId(id);
 
-        const c = await fetch(`${API}/api/carts/${id}`).then((r) => r.json());
-        setCart(c.items || []);
+        // Load cart data
+        const response = await fetch(`${API}/api/carts/${id}`);
+        if (!response.ok) {
+          throw new Error("Failed to load cart");
+        }
+        
+        const cartData = await response.json();
+        setCart(cartData.items || []);
       } catch (err) {
-        console.error(err);
+        console.error("Cart initialization error:", err);
       }
     })();
   }, []);
 
-  // ✅ FIX #2: category filters match schema enum (and are safe)
   const appetizers = useMemo(
     () => menu.filter((i) => String(i.category) === "appetizer"),
     [menu]
@@ -538,71 +607,125 @@ export default function App() {
   async function addToCart(menuItemId) {
     if (!cartId) return;
 
-    const updated = await fetch(`${API}/api/carts/${cartId}/items`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ menuItemId, qtyDelta: 1 }),
-    }).then((r) => r.json());
+    try {
+      const response = await fetch(`${API}/api/carts/${cartId}/items`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ menuItemId, qtyDelta: 1 }),
+      });
 
-    setCart(updated.items || []);
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        console.error("Add to cart failed:", error);
+        return;
+      }
+
+      const updated = await response.json();
+      setCart(updated.items || []);
+    } catch (err) {
+      console.error("Add to cart error:", err);
+    }
   }
 
   async function changeQty(menuItemId, delta) {
     if (!cartId) return;
 
-    const updated = await fetch(`${API}/api/carts/${cartId}/items`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ menuItemId, qtyDelta: delta }),
-    }).then((r) => r.json());
+    try {
+      const existingItem = cart.find(item => String(item.menuItem) === String(menuItemId));
+      
+      if (!existingItem && delta < 0) return;
 
-    setCart(updated.items || []);
+      const response = await fetch(`${API}/api/carts/${cartId}/items`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ menuItemId, qtyDelta: delta }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        console.error("Change quantity failed:", error);
+        return;
+      }
+
+      const updated = await response.json();
+      setCart(updated.items || []);
+    } catch (err) {
+      console.error("Change quantity error:", err);
+    }
   }
 
   async function removeItem(menuItemId) {
     if (!cartId) return;
 
-    const updated = await fetch(
-      `${API}/api/carts/${cartId}/items/${menuItemId}`,
-      { method: "DELETE" }
-    ).then((r) => r.json());
+    try {
+      const response = await fetch(
+        `${API}/api/carts/${cartId}/items/${menuItemId}`,
+        { method: "DELETE" }
+      );
 
-    setCart(updated.items || []);
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        console.error("Remove item failed:", error);
+        return;
+      }
+
+      const updated = await response.json();
+      setCart(updated.items || []);
+    } catch (err) {
+      console.error("Remove item error:", err);
+    }
   }
 
   async function clearCart() {
     if (!cartId) return;
 
-    const updated = await fetch(`${API}/api/carts/${cartId}`, {
-      method: "DELETE",
-    }).then((r) => r.json());
+    try {
+      const response = await fetch(`${API}/api/carts/${cartId}`, {
+        method: "DELETE",
+      });
 
-    setCart(updated.items || []);
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        console.error("Clear cart failed:", error);
+        return;
+      }
+
+      const updated = await response.json();
+      setCart(updated.items || []);
+    } catch (err) {
+      console.error("Clear cart error:", err);
+    }
   }
 
   async function checkout() {
     if (!cartId) return;
 
-    const res = await fetch(`${API}/api/orders`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cartId }),
-    });
+    try {
+      const response = await fetch(`${API}/api/orders`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cartId }),
+      });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      alert(err.message || "Checkout failed");
-      return;
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        alert(err.message || "Checkout failed");
+        return;
+      }
+
+      const order = await response.json();
+      alert(`Order placed! Total: $${Number(order.total).toFixed(2)}`);
+
+      await clearCart();
+      setCartOpen(false);
+    } catch (err) {
+      console.error("Checkout error:", err);
+      alert("Checkout failed. Please try again.");
     }
-
-    const order = await res.json();
-    alert(`Order placed! Total: $${Number(order.total).toFixed(2)}`);
-
-    await clearCart();
   }
 
   return (
-    <div style={{ backgroundColor: "#f5f0e6", minHeight: "100vh" }}>
+    <div style={{ backgroundColor: "#f5f0e6", minHeight: "100vh", paddingTop: '60px' }}>
       <Header cartCount={cartCount} onCartOpen={() => setCartOpen(true)} />
       <Hero />
 
